@@ -82,12 +82,14 @@ namespace Aspire.Hosting.Azure
         void IResourceWithAzureFunctionsConfig.ApplyAzureFunctionsConfiguration(System.Collections.Generic.IDictionary<string, object> target, string connectionName) { }
     }
 
-    public partial class AzureTableStorageResource : ApplicationModel.Resource, ApplicationModel.IResourceWithConnectionString, ApplicationModel.IResource, ApplicationModel.IManifestExpressionProvider, ApplicationModel.IValueProvider, ApplicationModel.IValueWithReferences, ApplicationModel.IResourceWithParent<AzureStorageResource>, ApplicationModel.IResourceWithParent
+    public partial class AzureTableStorageResource : ApplicationModel.Resource, ApplicationModel.IResourceWithConnectionString, ApplicationModel.IResource, ApplicationModel.IManifestExpressionProvider, ApplicationModel.IValueProvider, ApplicationModel.IValueWithReferences, ApplicationModel.IResourceWithParent<AzureStorageResource>, ApplicationModel.IResourceWithParent, IResourceWithAzureFunctionsConfig
     {
         public AzureTableStorageResource(string name, AzureStorageResource storage) : base(default!) { }
 
         public ApplicationModel.ReferenceExpression ConnectionStringExpression { get { throw null; } }
 
         public AzureStorageResource Parent { get { throw null; } }
+
+        void IResourceWithAzureFunctionsConfig.ApplyAzureFunctionsConfiguration(System.Collections.Generic.IDictionary<string, object> target, string connectionName) { }
     }
 }
