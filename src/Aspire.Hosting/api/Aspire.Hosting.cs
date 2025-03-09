@@ -8,6 +8,18 @@
 //------------------------------------------------------------------------------
 namespace Aspire.Hosting
 {
+    public static partial class ConnectionStringBuilderExtensions
+    {
+        public static ApplicationModel.IResourceBuilder<ConnectionStringResource> AddConnectionString(this IDistributedApplicationBuilder builder, string name, ApplicationModel.ReferenceExpression connectionStringExpression) { throw null; }
+    }
+
+    public sealed partial class ConnectionStringResource : ApplicationModel.Resource, ApplicationModel.IResourceWithConnectionString, ApplicationModel.IResource, ApplicationModel.IManifestExpressionProvider, ApplicationModel.IValueProvider, ApplicationModel.IValueWithReferences, ApplicationModel.IResourceWithoutLifetime
+    {
+        public ConnectionStringResource(string name, ApplicationModel.ReferenceExpression connectionStringExpression) : base(default!) { }
+
+        public ApplicationModel.ReferenceExpression ConnectionStringExpression { get { throw null; } }
+    }
+
     public static partial class ContainerResourceBuilderExtensions
     {
         public static ApplicationModel.IResourceBuilder<ApplicationModel.ContainerResource> AddContainer(this IDistributedApplicationBuilder builder, string name, string image, string tag) { throw null; }
@@ -175,6 +187,8 @@ namespace Aspire.Hosting
     {
         public DistributedApplicationExecutionContext(DistributedApplicationExecutionContextOptions options) { }
 
+        public DistributedApplicationExecutionContext(DistributedApplicationOperation operation, string publisherName) { }
+
         public DistributedApplicationExecutionContext(DistributedApplicationOperation operation) { }
 
         public bool IsPublishMode { get { throw null; } }
@@ -183,14 +197,20 @@ namespace Aspire.Hosting
 
         public DistributedApplicationOperation Operation { get { throw null; } }
 
+        public string? PublisherName { get { throw null; } set { } }
+
         public System.IServiceProvider ServiceProvider { get { throw null; } }
     }
 
     public partial class DistributedApplicationExecutionContextOptions
     {
+        public DistributedApplicationExecutionContextOptions(DistributedApplicationOperation operation, string? publisherName = null) { }
+
         public DistributedApplicationExecutionContextOptions(DistributedApplicationOperation operation) { }
 
         public DistributedApplicationOperation Operation { get { throw null; } }
+
+        public string? PublisherName { get { throw null; } }
 
         public System.IServiceProvider? ServiceProvider { get { throw null; } set { } }
     }
@@ -370,6 +390,12 @@ namespace Aspire.Hosting
         public bool ExcludeLaunchProfile { get { throw null; } set { } }
 
         public string? LaunchProfileName { get { throw null; } set { } }
+    }
+
+    public static partial class PublisherDistributedApplicationBuilderExtensions
+    {
+        public static void AddPublisher<TPublisher, TPublisherOptions>(this IDistributedApplicationBuilder builder, string name, System.Action<TPublisherOptions>? configureOptions = null)
+            where TPublisher : class, Publishing.IDistributedApplicationPublisher where TPublisherOptions : class { }
     }
 
     public static partial class ResourceBuilderExtensions
@@ -1086,6 +1112,10 @@ namespace Aspire.Hosting.ApplicationModel
     {
     }
 
+    public partial interface IResourceWithoutLifetime : IResource
+    {
+    }
+
     public partial interface IResourceWithParent : IResource
     {
         IResource Parent { get; }
@@ -1226,7 +1256,7 @@ namespace Aspire.Hosting.ApplicationModel
         public abstract void WriteToManifest(Publishing.ManifestPublishingContext context);
     }
 
-    public partial class ParameterResource : Resource, IManifestExpressionProvider, IValueProvider
+    public partial class ParameterResource : Resource, IResourceWithoutLifetime, IResource, IManifestExpressionProvider, IValueProvider
     {
         public ParameterResource(string name, System.Func<ParameterDefault?, string> callback, bool secret = false) : base(default!) { }
 
@@ -1290,6 +1320,9 @@ namespace Aspire.Hosting.ApplicationModel
 
             public void AppendFormatted<T>(T valueProvider)
                 where T : IValueProvider, IManifestExpressionProvider { }
+
+            public void AppendFormatted<T>(IResourceBuilder<T> valueProvider)
+                where T : IResource, IValueProvider, IManifestExpressionProvider { }
 
             public readonly void AppendLiteral(string value) { }
         }
@@ -1548,6 +1581,7 @@ namespace Aspire.Hosting.ApplicationModel
     [System.Diagnostics.DebuggerDisplay("{Url}", Name = "{Name}")]
     public sealed partial record UrlSnapshot(string Name, string Url, bool IsInternal)
     {
+        public bool IsInactive { get { throw null; } init { } }
     }
 
     [System.Diagnostics.DebuggerDisplay("{Source}", Name = "{Target}")]
