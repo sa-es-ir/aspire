@@ -67,6 +67,11 @@
         <target state="translated">Afficher les horodatages</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConsoleLogsTimestampShowUtc">
+        <source>UTC timestamps</source>
+        <target state="translated">Horodateurs UTC</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConsoleLogsUnknownState">
         <source>Unknown state</source>
         <target state="translated">État inconnu</target>

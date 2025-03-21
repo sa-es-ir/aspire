@@ -67,6 +67,11 @@
         <target state="translated">Zobrazit časová razítka</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConsoleLogsTimestampShowUtc">
+        <source>UTC timestamps</source>
+        <target state="translated">Časová razítka UTC</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConsoleLogsUnknownState">
         <source>Unknown state</source>
         <target state="translated">Neznámý stav</target>

@@ -78,6 +78,8 @@ public class AzureResourceOptionsTests(ITestOutputHelper output)
                 }
 
                 output serviceBusEndpoint string = sb.properties.serviceBusEndpoint
+
+                output name string = sb.name
                 """;
             output.WriteLine(actualBicep);
             Assert.Equal(expectedBicep, actualBicep);
@@ -128,6 +130,8 @@ public class AzureResourceOptionsTests(ITestOutputHelper output)
                 }
 
                 output sqlServerFqdn string = sql_server.properties.fullyQualifiedDomainName
+
+                output name string = sql_server.name
                 """;
             output.WriteLine(actualBicep);
             Assert.Equal(expectedBicep, actualBicep);

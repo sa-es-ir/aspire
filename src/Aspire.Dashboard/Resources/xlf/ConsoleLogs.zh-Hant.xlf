@@ -67,6 +67,11 @@
         <target state="translated">顯示時間戳記</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConsoleLogsTimestampShowUtc">
+        <source>UTC timestamps</source>
+        <target state="translated">UTC 時間戳記</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConsoleLogsUnknownState">
         <source>Unknown state</source>
         <target state="translated">未知狀態</target>

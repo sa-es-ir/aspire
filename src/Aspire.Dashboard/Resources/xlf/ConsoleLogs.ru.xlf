@@ -67,6 +67,11 @@
         <target state="translated">Показать метки времени</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConsoleLogsTimestampShowUtc">
+        <source>UTC timestamps</source>
+        <target state="translated">Метки времени UTC</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConsoleLogsUnknownState">
         <source>Unknown state</source>
         <target state="translated">Неизвестное состояние</target>

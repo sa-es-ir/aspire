@@ -67,6 +67,11 @@
         <target state="translated">Pokaż sygnatury czasowe</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConsoleLogsTimestampShowUtc">
+        <source>UTC timestamps</source>
+        <target state="translated">Sygnatury czasowe UTC</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConsoleLogsUnknownState">
         <source>Unknown state</source>
         <target state="translated">Nieznany stan</target>

@@ -23,7 +23,7 @@ using Xunit;
 namespace Aspire.Dashboard.Components.Tests.Pages;
 
 [UseCulture("en-US")]
-public partial class StructuredLogsTests : TestContext
+public partial class StructuredLogsTests : DashboardTestContext
 {
     [Fact]
     public void Render_TraceIdAndSpanId_FilterAdded()
@@ -171,6 +171,8 @@ public partial class StructuredLogsTests : TestContext
 
         JSInterop.SetupModule(GetFluentFile("./_content/Microsoft.FluentUI.AspNetCore.Components/Components/Toolbar/FluentToolbar.razor.js", version));
 
+        JSInterop.SetupModule(GetFluentFile("./_content/Microsoft.FluentUI.AspNetCore.Components/Components/Menu/FluentMenu.razor.js", version));
+
         JSInterop.SetupVoid("initializeContinuousScroll");
 
         Services.AddLocalization();
@@ -187,6 +189,7 @@ public partial class StructuredLogsTests : TestContext
         Services.AddSingleton<ShortcutManager>();
         Services.AddSingleton<LibraryConfiguration>();
         Services.AddSingleton<IKeyCodeService, KeyCodeService>();
+        Services.AddSingleton<GlobalState>();
     }
 
     private static string GetFluentFile(string filePath, Version version)

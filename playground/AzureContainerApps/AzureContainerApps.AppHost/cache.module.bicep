@@ -1,16 +1,14 @@
 @description('The location for the resource(s) to be deployed.')
 param location string = resourceGroup().location
 
-param cache_volumes_0_storage string
+param infra_outputs_volumes_cache_0 string
 
 @secure()
 param cache_password_value string
 
-param outputs_azure_container_registry_managed_identity_id string
+param infra_outputs_azure_container_registry_managed_identity_id string
 
-param outputs_managed_identity_client_id string
-
-param outputs_azure_container_apps_environment_id string
+param infra_outputs_azure_container_apps_environment_id string
 
 resource cache 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'cache'
@@ -30,7 +28,7 @@ resource cache 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'tcp'
       }
     }
-    environmentId: outputs_azure_container_apps_environment_id
+    environmentId: infra_outputs_azure_container_apps_environment_id
     template: {
       containers: [
         {
@@ -48,10 +46,6 @@ resource cache 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'REDIS_PASSWORD'
               secretRef: 'redis-password'
             }
-            {
-              name: 'AZURE_CLIENT_ID'
-              value: outputs_managed_identity_client_id
-            }
           ]
           volumeMounts: [
             {
@@ -68,7 +62,7 @@ resource cache 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'v0'
           storageType: 'AzureFile'
-          storageName: cache_volumes_0_storage
+          storageName: infra_outputs_volumes_cache_0
         }
       ]
     }
@@ -76,7 +70,7 @@ resource cache 'Microsoft.App/containerApps@2024-03-01' = {
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${outputs_azure_container_registry_managed_identity_id}': { }
+      '${infra_outputs_azure_container_registry_managed_identity_id}': { }
     }
   }
 }

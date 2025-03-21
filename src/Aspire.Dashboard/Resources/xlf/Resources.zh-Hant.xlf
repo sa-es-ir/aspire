@@ -82,6 +82,11 @@
         <target state="translated">動作</target>
         <note />
       </trans-unit>
+      <trans-unit id="ResourcesChangeViewOptions">
+        <source>View options</source>
+        <target state="translated">檢視選項</target>
+        <note>An icon allowing the user to expand or collapse all child resources.</note>
+      </trans-unit>
       <trans-unit id="ResourcesDetailsContainerArgumentsProperty">
         <source>Container arguments</source>
         <target state="translated">容器引數</target>
@@ -180,6 +185,21 @@
       <trans-unit id="ResourcesFiltered">
         <source>Has filters</source>
         <target state="translated">有篩選</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ResourcesGraphResetButton">
+        <source>Reset</source>
+        <target state="new">Reset</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ResourcesGraphZoomInButton">
+        <source>Zoom in</source>
+        <target state="new">Zoom in</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ResourcesGraphZoomOutButton">
+        <source>Zoom out</source>
+        <target state="new">Zoom out</target>
         <note />
       </trans-unit>
       <trans-unit id="ResourcesNotFiltered">

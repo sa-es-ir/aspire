@@ -1213,6 +1213,8 @@ internal sealed class DcpExecutor : IDcpExecutor, IAsyncDisposable
 
         spec.VolumeMounts = BuildContainerMounts(modelContainerResource);
 
+        spec.CreateFiles = await BuildCreateFilesAsync(modelContainerResource, cancellationToken).ConfigureAwait(false);
+
         (spec.RunArgs, var failedToApplyRunArgs) = await BuildRunArgsAsync(resourceLogger, modelContainerResource, cancellationToken).ConfigureAwait(false);
 
         (var args, var failedToApplyArgs) = await BuildArgsAsync(resourceLogger, modelContainerResource, cancellationToken).ConfigureAwait(false);
@@ -1508,12 +1510,18 @@ internal sealed class DcpExecutor : IDcpExecutor, IAsyncDisposable
             _logger.LogDebug("Ensuring '{ResourceName}' is deleted.", resourceName);
 
             var resourceNotFound = false;
+            string? uid = null;
             try
             {
-                await _kubernetesService.DeleteAsync<T>(resourceName, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var r = await _kubernetesService.DeleteAsync<T>(resourceName, cancellationToken: cancellationToken).ConfigureAwait(false);
+                uid = r.Uid();
+
+                _logger.LogDebug("Delete request for '{ResourceName}' successfully completed. Resource to delete has UID '{Uid}'.", resourceName, uid);
             }
             catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
+                _logger.LogDebug("Delete request for '{ResourceName}' returned NotFound.", resourceName);
+
                 // No-op if the resource wasn't found.
                 // This could happen in a race condition, e.g. double clicking start button.
                 resourceNotFound = true;
@@ -1525,15 +1533,21 @@ internal sealed class DcpExecutor : IDcpExecutor, IAsyncDisposable
             // before resorting to more extreme measures.
             if (!resourceNotFound)
             {
+                _logger.LogDebug("Polling DCP to check if '{ResourceName}' is deleted.", resourceName);
+
                 var result = await DeleteResourceRetryPipeline.ExecuteAsync<bool, string>(async (state, attemptCancellationToken) =>
                 {
                     try
                     {
-                        await _kubernetesService.GetAsync<T>(state, cancellationToken: attemptCancellationToken).ConfigureAwait(false);
+                        var r = await _kubernetesService.GetAsync<T>(state, cancellationToken: attemptCancellationToken).ConfigureAwait(false);
+                        _logger.LogDebug("Get request for '{ResourceName}' returned resource with UID '{Uid}'.", resourceName, uid);
+
                         return false;
                     }
                     catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
                     {
+                        _logger.LogDebug("Get request for '{ResourceName}' returned NotFound.", resourceName);
+
                         // Success.
                         return true;
                     }
@@ -1575,6 +1589,36 @@ internal sealed class DcpExecutor : IDcpExecutor, IAsyncDisposable
             cancellationToken).ConfigureAwait(false);
 
         return (args, failedToApplyArgs);
+    }
+
+    private async Task<List<ContainerCreateFileSystem>> BuildCreateFilesAsync(IResource modelResource, CancellationToken cancellationToken)
+    {
+        var createFiles = new List<ContainerCreateFileSystem>();
+
+        if (modelResource.TryGetAnnotationsOfType<ContainerFileSystemCallbackAnnotation>(out var createFileAnnotations))
+        {
+            foreach (var a in createFileAnnotations)
+            {
+                var entries = await a.Callback(
+                    new()
+                    {
+                        Model = modelResource,
+                        ServiceProvider = _executionContext.ServiceProvider
+                    },
+                    cancellationToken).ConfigureAwait(false);
+
+                createFiles.Add(new ContainerCreateFileSystem
+                {
+                    Destination = a.DestinationPath,
+                    DefaultOwner = a.DefaultOwner,
+                    DefaultGroup = a.DefaultGroup,
+                    Umask = (int?)a.Umask,
+                    Entries = entries.Select(e => e.ToContainerFileSystemEntry()).ToList(),
+                });
+            }
+        }
+
+        return createFiles;
     }
 
     private async Task<(List<EnvVar>, bool)> BuildEnvVarsAsync(ILogger resourceLogger, IResource modelResource, CancellationToken cancellationToken)

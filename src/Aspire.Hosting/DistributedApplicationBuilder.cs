@@ -6,12 +6,16 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using Aspire.Hosting.ApplicationModel;
-using Aspire.Hosting.Devcontainers.Codespaces;
+using Aspire.Hosting.Backchannel;
+using Aspire.Hosting.Cli;
 using Aspire.Hosting.Dashboard;
 using Aspire.Hosting.Dcp;
+using Aspire.Hosting.Devcontainers;
+using Aspire.Hosting.Devcontainers.Codespaces;
 using Aspire.Hosting.Eventing;
 using Aspire.Hosting.Health;
 using Aspire.Hosting.Lifecycle;
+using Aspire.Hosting.Orchestrator;
 using Aspire.Hosting.Publishing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,9 +24,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Aspire.Hosting.Devcontainers;
-using Aspire.Hosting.Orchestrator;
-using Aspire.Hosting.Cli;
+using Microsoft.Extensions.SecretManager.Tools.Internal;
 
 namespace Aspire.Hosting;
 
@@ -102,6 +104,34 @@ public class DistributedApplicationBuilder : IDistributedApplicationBuilder
     // values in various callbacks and is a central location to access useful services like IServiceProvider.
     private readonly DistributedApplicationExecutionContextOptions _executionContextOptions;
 
+    private DistributedApplicationExecutionContextOptions BuildExecutionContextOptions()
+    {
+        var operationConfiguration = _innerBuilder.Configuration["AppHost:Operation"];
+        if (operationConfiguration is null)
+        {
+            return _innerBuilder.Configuration["Publishing:Publisher"] switch
+            {
+                { } publisher => new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Publish, publisher),
+                _ => new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Run)
+            };
+        }
+
+        var operation = _innerBuilder.Configuration["AppHost:Operation"]?.ToLowerInvariant() switch
+        {
+            "publish" => DistributedApplicationOperation.Publish,
+            "inspect" => DistributedApplicationOperation.Inspect,
+            "run" => DistributedApplicationOperation.Run,
+            _ => throw new DistributedApplicationException("Invalid operation specified. Valid operations are 'publish', 'inspect', or 'run'.")
+        };
+
+        return operation switch
+        {
+            DistributedApplicationOperation.Run => new DistributedApplicationExecutionContextOptions(operation),
+            DistributedApplicationOperation.Inspect => new DistributedApplicationExecutionContextOptions(operation),
+            _ => new DistributedApplicationExecutionContextOptions(operation, _innerBuilder.Configuration["Publishing:Publisher"])
+        };
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="DistributedApplicationBuilder"/> class with the specified options.
     /// </summary>
@@ -170,12 +200,7 @@ public class DistributedApplicationBuilder : IDistributedApplicationBuilder
             [AspireStore.AspireStorePathKeyName] = aspireDir
         });
 
-        _executionContextOptions = _innerBuilder.Configuration["Publishing:Publisher"] switch
-        {
-            { } publisher => new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Publish, publisher),
-            _ => new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Run)
-        };
-
+        _executionContextOptions = BuildExecutionContextOptions();
         ExecutionContext = new DistributedApplicationExecutionContext(_executionContextOptions);
 
         // Conditionally configure AppHostSha based on execution context. For local scenarios, we want to
@@ -228,6 +253,9 @@ public class DistributedApplicationBuilder : IDistributedApplicationBuilder
 
         // Aspire CLI support
         _innerBuilder.Services.AddHostedService<CliOrphanDetector>();
+        _innerBuilder.Services.AddSingleton<BackchannelService>();
+        _innerBuilder.Services.AddHostedService<BackchannelService>(sp => sp.GetRequiredService<BackchannelService>());
+        _innerBuilder.Services.AddSingleton<AppHostRpcTarget>();
 
         ConfigureHealthChecks();
 
@@ -238,14 +266,12 @@ public class DistributedApplicationBuilder : IDistributedApplicationBuilder
             {
                 if (!IsDashboardUnsecured(_innerBuilder.Configuration))
                 {
-                    // Set a random API key for the OTLP exporter.
                     // Passed to apps as a standard OTEL attribute to include in OTLP requests and the dashboard to validate.
-                    _innerBuilder.Configuration.AddInMemoryCollection(
-                        new Dictionary<string, string?>
-                        {
-                            ["AppHost:OtlpApiKey"] = TokenGenerator.GenerateToken()
-                        }
-                    );
+                    // Set a random API key for the OTLP exporter if one isn't already present in configuration.
+                    // If a key is generated, it's stored in the user secrets store so that it will be auto-loaded
+                    // on subsequent runs and not recreated. This is important to ensure it doesn't change the state
+                    // of persistent containers (as a new key would be a spec change).
+                    SecretsStore.GetOrSetUserSecret(_innerBuilder.Configuration, AppHostAssembly, "AppHost:OtlpApiKey", TokenGenerator.GenerateToken);
 
                     // Determine the frontend browser token.
                     if (_innerBuilder.Configuration[KnownConfigNames.DashboardFrontendBrowserToken] is not { Length: > 0 } browserToken)
@@ -415,6 +441,7 @@ public class DistributedApplicationBuilder : IDistributedApplicationBuilder
     {
         var switchMappings = new Dictionary<string, string>()
         {
+            { "--operation", "AppHost:Operation" },
             { "--publisher", "Publishing:Publisher" },
             { "--output-path", "Publishing:OutputPath" },
             { "--dcp-cli-path", "DcpPublisher:CliPath" },

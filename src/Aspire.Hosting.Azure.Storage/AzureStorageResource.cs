@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Aspire.Hosting.ApplicationModel;
+using Azure.Provisioning.Primitives;
+using Azure.Provisioning.Storage;
 
 namespace Aspire.Hosting.Azure;
 
@@ -35,6 +37,8 @@ public class AzureStorageResource(string name, Action<AzureResourceInfrastructur
     /// Gets the "tableEndpoint" output reference from the bicep template for the Azure Storage resource.
     /// </summary>
     public BicepOutputReference TableEndpoint => new("tableEndpoint", this);
+
+    private BicepOutputReference NameOutputReference => new("name", this);
 
     /// <summary>
     /// Gets a value indicating whether the Azure Storage resource is running in the local emulator.
@@ -84,5 +88,14 @@ public class AzureStorageResource(string name, Action<AzureResourceInfrastructur
             target[$"{QueuesConnectionKeyPrefix}__{connectionName}__ServiceUri"] = QueueEndpoint;
             target[$"{TablesConnectionKeyPrefix}__{connectionName}__ServiceUri"] = TableEndpoint;
         }
+    }
+
+    /// <inheritdoc/>
+    public override ProvisionableResource AddAsExistingResource(AzureResourceInfrastructure infra)
+    {
+        var account = StorageAccount.FromExisting(this.GetBicepIdentifier());
+        account.Name = NameOutputReference.AsProvisioningParameter(infra);
+        infra.Add(account);
+        return account;
     }
 }

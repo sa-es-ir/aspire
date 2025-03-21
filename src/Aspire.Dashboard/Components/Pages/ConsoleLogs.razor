@@ -62,7 +62,7 @@
             }
 
             <AspireMenuButton ButtonAppearance="Appearance.Lightweight"
-                              Icon="@(new Icons.Regular.Size20.Settings())"
+                              Icon="@(new Icons.Regular.Size20.Options())"
                               Items="@_logsMenuItems"
                               Title="@Loc[nameof(Dashboard.Resources.ConsoleLogs.ConsoleLogsSettings)]"
                               slot="end" />
@@ -82,7 +82,7 @@
         </MobilePageTitleToolbarSection>
 
         <MainSection>
-            <LogViewer LogEntries="@_logEntries" ShowTimestamp="@_showTimestamp" />
+            <LogViewer LogEntries="@_logEntries" ShowTimestamp="@_showTimestamp" IsTimestampUtc="@_isTimestampUtc" />
         </MainSection>
     </AspirePageContentLayout>
 </div>
